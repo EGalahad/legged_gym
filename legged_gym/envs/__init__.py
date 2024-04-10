@@ -39,6 +39,7 @@ from .cassie.cassie import Cassie
 from .cassie.cassie_config import CassieRoughCfg, CassieRoughCfgPPO
 from .a1.a1_config import A1RoughCfg, A1RoughCfgPPO
 from .a1.a1_config_mujoco import A1MujocoCfg, A1MujocoCfgPPO
+from .cyberdog2.cyberdog2_config import CyberCommonCfg, CyberCommonCfgPPO
 
 
 import os
@@ -51,3 +52,4 @@ task_registry.register( "anymal_b", Anymal, AnymalBRoughCfg(), AnymalBRoughCfgPP
 task_registry.register( "a1", LeggedRobot, A1RoughCfg(), A1RoughCfgPPO() )
 task_registry.register( "a1_mujoco", LeggedRobot, A1MujocoCfg(), A1MujocoCfgPPO() )
 task_registry.register( "cassie", Cassie, CassieRoughCfg(), CassieRoughCfgPPO() )
+task_registry.register( "cyber", LeggedRobot, CyberCommonCfg(), CyberCommonCfgPPO() )
