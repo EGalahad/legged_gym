@@ -217,6 +217,13 @@ class LeggedRobot(BaseTask):
                                     self.dof_vel * self.obs_scales.dof_vel,
                                     self.actions
                                     ),dim=-1)
+        # base lin vel: 3
+        # base ang vel: 3
+        # gravity: 3
+        # commands: 3/4
+        # dof pos: 12
+        # dof vel: 12
+        # actions: 12
         # add perceptive inputs if not blind
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
@@ -350,6 +357,76 @@ class LeggedRobot(BaseTask):
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
 
+    # def _compute_torques(self, actions):
+    #     """ Compute torques from actions.
+    #         Actions can be interpreted as position or velocity targets given to a PD controller, or directly as scaled torques.
+    #         [NOTE]: torques must have the same dimension as the number of DOFs, even if some DOFs are not actuated.
+
+    #     Args:
+    #         actions (torch.Tensor): Actions
+
+    #     Returns:
+    #         [torch.Tensor]: Torques sent to the simulation
+    #     """
+    #     # update_mask = torch.rand(self.num_envs, 1).to(self.device) > 0.0 # communication stucked rate
+    #     # update_mask = torch.logical_or(update_mask, torch.norm(self.lagged_actions, dim=-1, keepdim=True) < 1e-3)
+    #     # updated_actions = actions * update_mask.float() + self.lagged_actions * (1 - update_mask.float())
+    #     updated_actions = actions
+    #     # self.lag_buffer = self.lag_buffer[1:] + [updated_actions.clone()]
+    #     # used_actions = self.lag_buffer[0]
+        
+    #     # According to swing or stance leg, use different lag timesteps, and update valid_history_length
+    #     self.lag_buffer = torch.cat([self.lag_buffer[:, :, 1:], updated_actions.unsqueeze(dim=-1).clone()], dim=-1)
+    #     terrain_at_foot_height = self._get_heights_at_points(self.foot_positions[:, :, :2])
+    #     is_swing = torch.tile((self.foot_positions[:, :, 2] > terrain_at_foot_height + 0.019).unsqueeze(dim=-1), (1, 1, 3)).reshape((self.num_envs, self.num_dof))
+    #     dynamic_factor = torch.ones_like(self.dof_pos)
+    #     if self.cfg.domain_rand.use_dynamic_kp_scale:
+    #         dynamic_factor[is_swing] = 0.85
+    #     self.lag_steps[:] = torch.from_numpy(np.random.randint(
+    #         low=self.cfg.domain_rand.stance_lag_timesteps[0], 
+    #         high=self.cfg.domain_rand.stance_lag_timesteps[1] + 1,
+    #         size=self.lag_steps.shape
+    #     )).to(self.device)
+    #     self.lag_steps[is_swing] = torch.from_numpy(np.random.randint(
+    #         low=self.cfg.domain_rand.swing_lag_timesteps[0], 
+    #         high=self.cfg.domain_rand.swing_lag_timesteps[1] + 1,
+    #         size=self.lag_steps[is_swing].shape
+    #     )).to(self.device) # large delay when swing
+    #     cur_lag_steps = torch.minimum(self.valid_history_length, self.lag_steps) # min: 0, no delay; max: cfg.lag_timesteps
+    #     # index: out[i][j] = input[i][j][index[i][j]]
+    #     used_actions = torch.gather(self.lag_buffer, 2, (self.cfg.domain_rand.lag_timesteps - cur_lag_steps).unsqueeze(2)).squeeze(-1)
+    #     self.valid_history_length = torch.clamp(cur_lag_steps + 1, max=self.cfg.domain_rand.lag_timesteps)
+        
+    #     # self.lagged_actions[:] = updated_actions[:]
+    #     #pd controller
+    #     actions_scaled = used_actions * self.cfg.control.action_scale
+    #     actions_scaled[:, [0, 3, 6, 9]] *= self.cfg.control.hip_reduction_scale
+    #     # TODO: simulate delay of control thread. Maintain old actions, update with new actions with some probablity
+        # control_type = self.cfg.control.control_type
+        # if control_type=="P":
+        #     if self.cfg.control.action_mode == "bias":
+        #         motor_target = actions_scaled + self.default_dof_pos
+        #     elif self.cfg.control.action_mode == "nobias":
+        #         motor_target = self.dof_pos_hard_limits[:, 0].unsqueeze(dim=0) + (
+        #             torch.clamp(actions_scaled, -1, 1) + 1) / 2 * ((self.dof_pos_hard_limits[:, 1] - self.dof_pos_hard_limits[:, 0]).unsqueeze(dim=0))
+        #     else:
+        #         raise NotImplementedError
+        #     self.overshoot_buf = self.overshoot_buf + (motor_target - self.dof_pos_hard_limits[:, 1].unsqueeze(dim=0)).clip(min=0) + (self.dof_pos_hard_limits[:, 0].unsqueeze(dim=0) - motor_target).clip(min=0)
+        #     # self.q_diff_buf = self.q_diff_buf + (torch.abs(motor_target - self.dof_pos) - 2 * self.torque_limits / self.p_gains).clip(min=0)
+        #     # motor_target = self.dof_pos + torch.clamp(motor_target - self.dof_pos, -2 * self.torque_limits / self.p_gains, 2 * self.torque_limits / self.p_gains)
+        #     torques = self.p_gains*self.Kp_factor*dynamic_factor*(motor_target - self.dof_pos) - self.d_gains*self.Kd_factor*dynamic_factor*self.dof_vel
+        # elif control_type=="V":
+        #     torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
+        # elif control_type=="T":
+        #     torques = actions_scaled
+        # else:
+        #     raise NameError(f"Unknown controller type: {control_type}")
+        # res = torch.clip(torques, -self.torque_limits * self.cfg.control.torque_scale, self.torque_limits * self.cfg.control.torque_scale)
+        # # self.torque_buffer.append(res[0].cpu().numpy())
+        # # self.save_data_buffer['q'].append(self.dof_pos[0].cpu().numpy())
+        # # self.save_data_buffer['q_des'].append(motor_target[0].cpu().numpy())
+        # # self.save_data_buffer['projected_gravity'].append(quat_rotate_inverse(self.base_quat, self.gravity_vec)[0].cpu().numpy())
+        # return res
     def _compute_torques(self, actions):
         """ Compute torques from actions.
             Actions can be interpreted as position or velocity targets given to a PD controller, or directly as scaled torques.
@@ -540,6 +617,8 @@ class LeggedRobot(BaseTask):
                 if self.cfg.control.control_type in ["P", "V"]:
                     print(f"PD gain of joint {name} were not defined, setting them to zero")
         self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
+        self.lag_buffer = torch.zeros((self.num_envs, self.num_dof, self.cfg.domain_rand.lag_timesteps + 1), dtype=torch.float, device=self.device)
+        self.lag_steps = torch.zeros((self.num_envs, self.num_dof), dtype=int, device=self.device)
 
     def _prepare_reward_function(self):
         """ Prepares a list of reward functions, whcih will be called to compute the total reward.
