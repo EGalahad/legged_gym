@@ -440,6 +440,10 @@ class LeggedRobot(BaseTask):
         """
         #pd controller
         actions_scaled = actions * self.cfg.control.action_scale
+        # debug by let the dog stand still
+        # actions_scaled[:] = 0
+        # base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
+        # print(base_height)
         control_type = self.cfg.control.control_type
         if control_type=="P":
             torques = self.p_gains*(actions_scaled + self.default_dof_pos - self.dof_pos) - self.d_gains*self.dof_vel
@@ -617,8 +621,8 @@ class LeggedRobot(BaseTask):
                 if self.cfg.control.control_type in ["P", "V"]:
                     print(f"PD gain of joint {name} were not defined, setting them to zero")
         self.default_dof_pos = self.default_dof_pos.unsqueeze(0)
-        self.lag_buffer = torch.zeros((self.num_envs, self.num_dof, self.cfg.domain_rand.lag_timesteps + 1), dtype=torch.float, device=self.device)
-        self.lag_steps = torch.zeros((self.num_envs, self.num_dof), dtype=int, device=self.device)
+        # self.lag_buffer = torch.zeros((self.num_envs, self.num_dof, self.cfg.domain_rand.lag_timesteps + 1), dtype=torch.float, device=self.device)
+        # self.lag_steps = torch.zeros((self.num_envs, self.num_dof), dtype=int, device=self.device)
 
     def _prepare_reward_function(self):
         """ Prepares a list of reward functions, whcih will be called to compute the total reward.

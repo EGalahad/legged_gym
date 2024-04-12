@@ -44,33 +44,38 @@ class CyberCommonCfg(LeggedRobotCfg):
         foot_name = "foot"
         self_collisions = 0  # 1 to disable, 0 to enable...bitwise filter
         penalize_contacts_on = ["thigh", "calf"]
+        terminate_after_contacts_on = ["base"]
 
     class domain_rand(LeggedRobotCfg.domain_rand):
         randomize_friction = True
-        friction_range = [1.0, 3.0]
-        randomize_restitution = True
+        # friction_range = [1.0, 3.0]
+        friction_range = [0.5, 1.25]
         randomize_base_mass = True
         added_mass_range = [-0.5, 0.5]
-        randomize_com_displacement = True
-        com_displacement_range = [[-0.01, 0.0, -0.01], [0.01, 0.0, 0.01]]
-        randomize_joint_props = True
-        joint_friction_range = [0.03, 0.08]
-        joint_damping_range = [0.02, 0.06]
 
-        use_dynamic_kp_scale = False
-        lag_timesteps = 6
-        swing_lag_timesteps = [6, 6]
-        stance_lag_timesteps = [1, 1]
+        # randomize_restitution = True
+        # randomize_com_displacement = True
+        # com_displacement_range = [[-0.01, 0.0, -0.01], [0.01, 0.0, 0.01]]
+        # randomize_joint_props = True
+        # joint_friction_range = [0.03, 0.08]
+        # joint_damping_range = [0.02, 0.06]
+        # use_dynamic_kp_scale = False
+        # lag_timesteps = 6
+        # swing_lag_timesteps = [6, 6]
+        # stance_lag_timesteps = [1, 1]
 
     class rewards(LeggedRobotCfg.rewards):
         # only_positive_rewards_ji22_style = False
         # kappa_gait_probs = 0.07
         # gait_force_sigma = 100.0
         # gait_vel_sigma = 10.0
-        base_height_target = 0.30
+        soft_dof_pos_limit = 0.9
+        base_height_target = 0.25
 
         class scales (LeggedRobotCfg.rewards.scales):
             base_height = -0.1
+            torques = -0.0002
+            dof_pos_limits = -10.0
             
 
     class terrain(LeggedRobotCfg.terrain):
