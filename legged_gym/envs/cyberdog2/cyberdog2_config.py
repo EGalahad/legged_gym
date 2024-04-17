@@ -4,6 +4,7 @@ from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobot
 class CyberCommonCfg(LeggedRobotCfg):
     class env(LeggedRobotCfg.env):
         num_envs = 4096
+        num_observations = 48
         obs_base_vel = False
         obs_base_vela = False
         obs_height = False
@@ -13,19 +14,20 @@ class CyberCommonCfg(LeggedRobotCfg):
         single_height = False
 
     class init_state(LeggedRobotCfg.init_state):
+        pos = [0.0, 0.0, 0.28]  # x,y,z [m]
         default_joint_angles = {  # = target angles [rad] when action = 0.0
             "FL_hip_joint": 0.0,  # [rad]
             "RL_hip_joint": 0.0,  # [rad]
             "FR_hip_joint": 0.0,  # [rad]
             "RR_hip_joint": 0.0,  # [rad]
-            "FL_thigh_joint": -45 / 57.3,  # [rad]
-            "RL_thigh_joint": -45 / 57.3,  # [rad]
-            "FR_thigh_joint": -45 / 57.3,  # [rad]
-            "RR_thigh_joint": -45 / 57.3,  # [rad]
-            "FL_calf_joint": 70 / 57.3,  # [rad]
-            "RL_calf_joint": 70 / 57.3,  # [rad]
-            "FR_calf_joint": 70 / 57.3,  # [rad]
-            "RR_calf_joint": 70 / 57.3,  # [rad]
+            "FL_thigh_joint": -40 / 57.3,  # [rad]
+            "RL_thigh_joint": -48 / 57.3,  # [rad]
+            "FR_thigh_joint": -40 / 57.3,  # [rad]
+            "RR_thigh_joint": -48 / 57.3,  # [rad]
+            "FL_calf_joint": 45 / 57.3,  # [rad]
+            "RL_calf_joint": 30 / 57.3,  # [rad]
+            "FR_calf_joint": 45 / 57.3,  # [rad]
+            "RR_calf_joint": 30 / 57.3,  # [rad]
         }
 
     class control(LeggedRobotCfg.control):
@@ -34,7 +36,8 @@ class CyberCommonCfg(LeggedRobotCfg):
         # action scale: target angle = actionScale * action + defaultAngle
         stiffness = { "joint": 60.0 }
         damping = { "joint": 2.0 }
-        action_scale = 0.25
+        action_scale = 0.5
+        decimation = 4
         # hip_reduction_scale = 1.0
         # ratio_delay = 0.0
 
@@ -42,7 +45,7 @@ class CyberCommonCfg(LeggedRobotCfg):
         file = "{LEGGED_GYM_ROOT_DIR}/resources/robots/cyberdog2/urdf/cyberdog2_v2.urdf"
         name = "cyber2"
         foot_name = "foot"
-        self_collisions = 0  # 1 to disable, 0 to enable...bitwise filter
+        self_collisions = 1  # 1 to disable, 0 to enable...bitwise filter
         penalize_contacts_on = ["thigh", "calf"]
         terminate_after_contacts_on = ["base"]
 
@@ -70,19 +73,23 @@ class CyberCommonCfg(LeggedRobotCfg):
         # gait_force_sigma = 100.0
         # gait_vel_sigma = 10.0
         soft_dof_pos_limit = 0.9
-        base_height_target = 0.25
+        base_height_target = 0.26
+        max_contact_force = 500.0
 
         class scales (LeggedRobotCfg.rewards.scales):
             base_height = -0.1
             torques = -0.0002
             dof_pos_limits = -10.0
+            # do not stand still
+            stand_still = -10.0
             
-
     class terrain(LeggedRobotCfg.terrain):
         mesh_type = "plane"
+        # first test on a flat terrain
+        measure_heights = False
         curriculum = False
-        static_friction = 0.2
-        dynamic_friction = 0.2
+        # static_friction = 0.2
+        # dynamic_friction = 0.2
 
 
 class CyberCommonCfgPPO(LeggedRobotCfgPPO):
@@ -90,3 +97,7 @@ class CyberCommonCfgPPO(LeggedRobotCfgPPO):
         entropy_coef = 0.01
         learning_rate = 1e-4
         schedule = "fixed"
+    class runner( LeggedRobotCfgPPO.runner):
+        run_name = ''
+        experiment_name = 'cyberdog2'
+        # max_iterations = 500
